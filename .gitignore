@@ -1,0 +1,11 @@
+
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.sln.docstates
+**/Properties/PublishProfiles/
+appsettings.*.local.json
+*.log
+node_modules/
