@@ -1,25 +1,27 @@
-﻿var builder = WebApplication.CreateBuilder(args);
+﻿using MevzuatUygunluk.Services; // <-- gerekli
 
-// --- Services ---
+var builder = WebApplication.CreateBuilder(args);
+
+// Services
 builder.Services.AddControllersWithViews();
-builder.Services.AddHttpClient();   // 🔑 IHttpClientFactory kaydı burada olacak
+builder.Services.AddHttpClient();
+
+// DI kayıtları (HATAYI ÇÖZER)
+builder.Services.AddSingleton<IRequirementsStore, RequirementsStore>();
+builder.Services.AddScoped<IGeminiService, GeminiService>();
 
 var app = builder.Build();
 
-// --- Middleware pipeline ---
+// Pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
-
-// Eğer sadece HTTP kullanacaksan şunu kapatabilirsin
 // app.UseHttpsRedirection();
-
 app.UseStaticFiles();
 app.UseRouting();
 
-// Default route’u Docs/Index yapıyoruz
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Docs}/{action=Index}/{id?}");

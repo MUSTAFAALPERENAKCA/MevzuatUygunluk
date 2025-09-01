@@ -1,4 +1,6 @@
-﻿public static class RequirementsCatalog
+﻿namespace MevzuatUygunluk.Services;
+
+public static class RequirementsCatalog
 {
     public static readonly IReadOnlyList<string> Default = new List<string>
     {

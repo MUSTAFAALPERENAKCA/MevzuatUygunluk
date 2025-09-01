@@ -1,4 +1,6 @@
-﻿public class ChecksVm
+﻿namespace MevzuatUygunluk.Models;
+
+public class ChecksVm
 {
     public List<CheckResult>? Checks { get; set; }
     public string? Error { get; set; }
@@ -16,4 +18,5 @@ public class CheckResult
 public class GeminiChecksResponse
 {
     public List<CheckResult>? Checks { get; set; }
+    public string? Overall_Summary { get; set; }
 }

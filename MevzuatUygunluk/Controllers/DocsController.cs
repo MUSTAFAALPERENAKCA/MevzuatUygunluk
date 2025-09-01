@@ -3,167 +3,213 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Mvc;
+using MevzuatUygunluk.Models;
+using MevzuatUygunluk.Services;
 
-public class DocsController : Controller
+namespace MevzuatUygunluk.Controllers
 {
-    private readonly IHttpClientFactory _httpFactory;
-    private readonly IConfiguration _config;
-
-    public DocsController(IHttpClientFactory httpFactory, IConfiguration config)
+    public class DocsController : Controller
     {
-        _httpFactory = httpFactory;
-        _config = config;
-    }
+        private readonly IHttpClientFactory _httpFactory;
+        private readonly IConfiguration _config;
+        private readonly IRequirementsStore _reqStore;
 
-    [HttpGet]
-    public IActionResult Index() => View(new ChecksVm());
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AnalyzeChecks(IFormFile file)
-    {
-        var vm = new ChecksVm();
-
-        if (file == null || file.Length == 0)
+        public DocsController(IHttpClientFactory httpFactory, IConfiguration config, IRequirementsStore reqStore)
         {
-            vm.Error = "Dosya yüklenmedi.";
-            return View("Index", vm);
+            _httpFactory = httpFactory;
+            _config = config;
+            _reqStore = reqStore;
         }
 
-        try
+        [HttpGet]
+        public async Task<IActionResult> Index()
         {
-            var apiKey = _config["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini ApiKey eksik.");
-            var model = _config["Gemini:Model"] ?? "gemini-2.0-flash";
+            var gen = await _reqStore.LoadAsync();
+            var reqs = gen?.Requirements?.Select(x => x.Requirement).ToList() ?? RequirementsCatalog.Default.ToList();
+            ViewBag.Requirements = reqs;
+            return View(new ChecksVm());
+        }
 
-            var client = _httpFactory.CreateClient();
-            client.DefaultRequestHeaders.Add("x-goog-api-key", apiKey);
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AnalyzeChecks(IFormFile file)
+        {
+            var vm = new ChecksVm();
 
-            // 1) Resumable upload: start
-            var startReq = new HttpRequestMessage(HttpMethod.Post,
-                "https://generativelanguage.googleapis.com/upload/v1beta/files");
-            startReq.Headers.Add("X-Goog-Upload-Protocol", "resumable");
-            startReq.Headers.Add("X-Goog-Upload-Command", "start");
-            startReq.Headers.Add("X-Goog-Upload-Header-Content-Length", file.Length.ToString());
-            startReq.Headers.Add("X-Goog-Upload-Header-Content-Type", file.ContentType ?? "application/octet-stream");
-            startReq.Content = new StringContent(
-                "{\"file\": {\"display_name\": \"" + (file.FileName ?? "upload") + "\"}}",
-                Encoding.UTF8, "application/json");
+            if (file is null || file.Length == 0)
+            {
+                vm.Error = "Dosya yüklenmedi.";
+                return await ReturnIndexWithReqs(vm);
+            }
 
-            var startResp = await client.SendAsync(startReq);
-            startResp.EnsureSuccessStatusCode();
-            var uploadUrl = startResp.Headers.GetValues("X-Goog-Upload-URL").First();
+            try
+            {
+                var apiKey = _config["Gemini:ApiKey"];
+                if (string.IsNullOrWhiteSpace(apiKey))
+                    throw new InvalidOperationException("Gemini ApiKey eksik. (User Secrets veya ortam deðiþkenine ekleyin: Gemini:ApiKey)");
 
-            // 2) Upload + finalize
-            using var ms = new MemoryStream();
-            await file.CopyToAsync(ms);
-            ms.Position = 0;
-            var uploadReq = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
-            uploadReq.Headers.Add("X-Goog-Upload-Offset", "0");
-            uploadReq.Headers.Add("X-Goog-Upload-Command", "upload, finalize");
-            uploadReq.Content = new ByteArrayContent(ms.ToArray());
-            uploadReq.Content.Headers.ContentLength = ms.Length;
-            uploadReq.Content.Headers.ContentType =
-                new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+                var model = _config["Gemini:Model"] ?? "gemini-2.0-flash";
 
-            var uploadResp = await client.SendAsync(uploadReq);
-            uploadResp.EnsureSuccessStatusCode();
-            using var uploadJson = await uploadResp.Content.ReadAsStreamAsync();
-            using var doc = await JsonDocument.ParseAsync(uploadJson);
-            var fileObj = doc.RootElement.GetProperty("file");
-            var fileUri = fileObj.GetProperty("uri").GetString();
-            var mimeType = fileObj.GetProperty("mime_type").GetString() ?? "application/octet-stream";
+                var client = _httpFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("x-goog-api-key", apiKey);
 
-            // 3) Þartlarý katalogdan çek
-            var reqs = RequirementsCatalog.Default;
+                // 1) START
+                var startReq = new HttpRequestMessage(HttpMethod.Post, "https://generativelanguage.googleapis.com/upload/v1beta/files");
+                startReq.Headers.Add("X-Goog-Upload-Protocol", "resumable");
+                startReq.Headers.Add("X-Goog-Upload-Command", "start");
+                startReq.Headers.Add("X-Goog-Upload-Header-Content-Length", file.Length.ToString());
+                startReq.Headers.Add("X-Goog-Upload-Header-Content-Type", file.ContentType ?? "application/octet-stream");
+                startReq.Content = new StringContent("{\"file\": {\"display_name\": \"" + (file.FileName ?? "upload") + "\"}}", Encoding.UTF8, "application/json");
 
-            // 4) Prompt
-            var prompt =
-@"Aþaðýdaki dosyayý deðerlendir.
-Her þart için JSON döndür:
-- requirement
-- present
-- evidence
-- pages
-- confidence
+                var startResp = await client.SendAsync(startReq);
+                var startBody = await startResp.Content.ReadAsStringAsync();
+                if (!startResp.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Files start failed: {(int)startResp.StatusCode} {startResp.ReasonPhrase}. Body: {startBody}");
+                if (!startResp.Headers.TryGetValues("X-Goog-Upload-URL", out var uploadUrls))
+                    throw new InvalidOperationException($"Upload URL header missing. Response body: {startBody}");
+                var uploadUrl = uploadUrls.First();
+
+                // 2) UPLOAD + FINALIZE
+                using var ms = new MemoryStream();
+                await file.CopyToAsync(ms);
+                ms.Position = 0;
+
+                var uploadReq = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+                uploadReq.Headers.Add("X-Goog-Upload-Offset", "0");
+                uploadReq.Headers.Add("X-Goog-Upload-Command", "upload, finalize");
+                uploadReq.Content = new ByteArrayContent(ms.ToArray());
+                uploadReq.Content.Headers.ContentLength = ms.Length;
+                uploadReq.Content.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+
+                var uploadResp = await client.SendAsync(uploadReq);
+                var uploadBody = await uploadResp.Content.ReadAsStringAsync();
+                if (!uploadResp.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Files upload failed: {(int)uploadResp.StatusCode} {uploadResp.ReasonPhrase}. Body: {uploadBody}");
+
+                using var uploadJson = new MemoryStream(Encoding.UTF8.GetBytes(uploadBody));
+                using var doc = await JsonDocument.ParseAsync(uploadJson);
+                var fileObj = doc.RootElement.GetProperty("file");
+                var fileUri = fileObj.GetProperty("uri").GetString();
+                var mimeType = fileObj.TryGetProperty("mime_type", out var mt)
+                    ? (mt.GetString() ?? "application/octet-stream")
+                    : (file.ContentType ?? "application/octet-stream");
+
+                if (string.IsNullOrWhiteSpace(fileUri))
+                    throw new InvalidOperationException("file.uri alýnamadý.");
+
+                // 3) ÞART LÝSTESÝ
+                var gen = await _reqStore.LoadAsync();
+                var reqs = gen?.Requirements?.Select(x => x.Requirement).ToList() ?? RequirementsCatalog.Default.ToList();
+
+                // 4) PROMPT
+                var prompt =
+@"Aþaðýdaki dosyayý yalnýzca içeriðindeki kanýtlara dayanarak deðerlendir.
+Her bir þart için JSON alanlarý döndür:
+- requirement (string)
+- present (boolean)
+- evidence (string, max 300 karakter, metinden alýntý)
+- pages (integer list, mümkünse)
+- confidence (0-1)
+
+Kanýt bulunamazsa present=false ve evidence='-'.
 
 Þartlar:
-" + string.Join("\n- ", reqs);
+" + string.Join("\n- ", reqs.Select(r => "- " + r));
 
-            // 5) Structured JSON iste
-            var genUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
-            var payload = new
-            {
-                contents = new[]
+                // 5) GENERATE (structured JSON)
+                var genUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent";
+                var payload = new
                 {
-                    new {
-                        parts = new object[]
+                    contents = new[]
+                    {
+                        new {
+                            parts = new object[]
+                            {
+                                new { text = prompt },
+                                new { file_data = new { mime_type = mimeType, file_uri = fileUri } }
+                            }
+                        }
+                    },
+                    generationConfig = new
+                    {
+                        response_mime_type = "application/json",
+                        response_schema = new
                         {
-                            new { text = prompt },
-                            new { file_data = new { mime_type = mimeType, file_uri = fileUri } }
+                            type = "object",
+                            properties = new
+                            {
+                                checks = new
+                                {
+                                    type = "array",
+                                    items = new
+                                    {
+                                        type = "object",
+                                        properties = new
+                                        {
+                                            requirement = new { type = "string" },
+                                            present = new { type = "boolean" },
+                                            evidence = new { type = "string" },
+                                            pages = new { type = "array", items = new { type = "integer" } },
+                                            confidence = new { type = "number" }
+                                        },
+                                        required = new[] { "requirement", "present" }
+                                    }
+                                },
+                                overall_summary = new { type = "string" }
+                            },
+                            required = new[] { "checks" }
                         }
                     }
-                },
-                generationConfig = new
+                };
+
+                var genReq = new HttpRequestMessage(HttpMethod.Post, genUrl);
+                genReq.Headers.Add("x-goog-api-key", _config["Gemini:ApiKey"]);
+                genReq.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+                var genResp = await client.SendAsync(genReq);
+                var genBody = await genResp.Content.ReadAsStringAsync();
+                if (!genResp.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Generate failed: {(int)genResp.StatusCode} {genResp.ReasonPhrase}. Body: {genBody}");
+
+                using var genDoc = JsonDocument.Parse(genBody);
+                string? jsonText = null;
+                if (genDoc.RootElement.TryGetProperty("candidates", out var candArr) && candArr.GetArrayLength() > 0)
                 {
-                    response_mime_type = "application/json",
-                    response_schema = new
+                    var cand0 = candArr[0];
+                    if (cand0.TryGetProperty("content", out var content) &&
+                        content.TryGetProperty("parts", out var parts) &&
+                        parts.GetArrayLength() > 0 &&
+                        parts[0].TryGetProperty("text", out var textEl))
                     {
-                        type = "object",
-                        properties = new
-                        {
-                            checks = new
-                            {
-                                type = "array",
-                                items = new
-                                {
-                                    type = "object",
-                                    properties = new
-                                    {
-                                        requirement = new { type = "string" },
-                                        present = new { type = "boolean" },
-                                        evidence = new { type = "string" },
-                                        pages = new { type = "array", items = new { type = "integer" } },
-                                        confidence = new { type = "number" }
-                                    },
-                                    required = new[] { "requirement", "present" }
-                                }
-                            }
-                        },
-                        required = new[] { "checks" }
+                        jsonText = textEl.GetString();
                     }
                 }
-            };
+                if (string.IsNullOrWhiteSpace(jsonText))
+                    throw new InvalidOperationException($"Yapýlandýrýlmýþ yanýt alýnamadý. Body: {genBody}");
 
-            var genReq = new HttpRequestMessage(HttpMethod.Post, genUrl);
-            genReq.Headers.Add("x-goog-api-key", apiKey);
-            genReq.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                var opts = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    NumberHandling = JsonNumberHandling.AllowReadingFromString
+                };
+                var parsed = JsonSerializer.Deserialize<GeminiChecksResponse>(jsonText!, opts);
 
-            var genResp = await client.SendAsync(genReq);
-            genResp.EnsureSuccessStatusCode();
-            var genJson = await genResp.Content.ReadAsStringAsync();
-
-            using var genDoc = JsonDocument.Parse(genJson);
-            var jsonText = genDoc.RootElement
-                .GetProperty("candidates")[0]
-                .GetProperty("content")
-                .GetProperty("parts")[0]
-                .GetProperty("text")
-                .GetString();
-
-            var opts = new JsonSerializerOptions
+                vm.Checks = parsed?.Checks ?? new List<CheckResult>();
+            }
+            catch (Exception ex)
             {
-                PropertyNameCaseInsensitive = true,
-                NumberHandling = JsonNumberHandling.AllowReadingFromString
-            };
-            var parsed = JsonSerializer.Deserialize<GeminiChecksResponse>(jsonText!, opts);
+                vm.Error = ex.Message;
+            }
 
-            vm.Checks = parsed?.Checks ?? new List<CheckResult>();
+            return await ReturnIndexWithReqs(vm);
         }
-        catch (Exception ex)
+
+        private async Task<IActionResult> ReturnIndexWithReqs(ChecksVm vm)
         {
-            vm.Error = ex.Message;
+            var gen = await _reqStore.LoadAsync();
+            var reqs = gen?.Requirements?.Select(x => x.Requirement).ToList() ?? RequirementsCatalog.Default.ToList();
+            ViewBag.Requirements = reqs;
+            return View("Index", vm);
         }
-
-        return View("Index", vm);
     }
 }

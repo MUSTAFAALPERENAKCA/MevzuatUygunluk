@@ -1,6 +1,7 @@
-﻿@model ChecksVm
+﻿@model MevzuatUygunluk.Models.ChecksVm
 @{
     ViewData["Title"] = "Belge Denetle";
+    var reqs = ViewBag.Requirements as IEnumerable<string> ?? MevzuatUygunluk.Services.RequirementsCatalog.Default;
 }
 
 <div class="row g-4">
@@ -43,7 +44,7 @@
                 <hr class="my-4" />
                 <h6 class="text-secondary mb-2">Denetlenecek Şart Seti</h6>
                 <ul class="list-unstyled small mb-0">
-                    @foreach (var r in RequirementsCatalog.Default)
+                    @foreach (var r in reqs)
                     {
                         <li class="mb-1"><i class="bi bi-dot me-1"></i>@r</li>
                     }
@@ -139,7 +140,6 @@
 
 @section Scripts {
     <script>
-        // Drag&Drop ve durum yönetimi
         const drop = document.getElementById('dropzone');
         const input = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
@@ -153,34 +153,22 @@
             lblLoading.classList.toggle('d-none', !on);
             submitBtn.disabled = on;
         }
-
         function updateName(files) {
             if (files && files.length) {
                 fileName.textContent = files[0].name + ` (${Math.round(files[0].size/1024)} KB)`;
             }
         }
-
         drop.addEventListener('click', () => input.click());
         drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
         drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
         drop.addEventListener('drop', e => {
             e.preventDefault(); drop.classList.remove('dragover');
-            if (e.dataTransfer.files?.length) {
-                input.files = e.dataTransfer.files;
-                updateName(input.files);
-            }
+            if (e.dataTransfer.files?.length) { input.files = e.dataTransfer.files; updateName(input.files); }
         });
         input.addEventListener('change', () => updateName(input.files));
-
         form.addEventListener('submit', (e) => {
-            if (!input.files?.length) {
-                e.preventDefault();
-                showToast('Lütfen bir dosya seçin.');
-                return;
-            }
+            if (!input.files?.length) { e.preventDefault(); showToast('Lütfen bir dosya seçin.'); return; }
             setLoading(true);
         });
-
-        // Eğer sunucu hatası dönerse sayfa yeniden yüklenir; loading otomatik sıfırlanır.
     </script>
 }
