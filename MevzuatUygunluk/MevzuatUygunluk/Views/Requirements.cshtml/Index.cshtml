@@ -1,0 +1,58 @@
+﻿@model MevzuatUygunluk.Models.GeneratedRequirements
+@{
+    ViewData["Title"] = "Mevzuat Şartları";
+}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h3 class="mb-0">Mevzuat Şartları (@(ViewBag.Count ?? 0))</h3>
+    <form asp-action="Regenerate" asp-controller="Requirements" method="post">
+        @Html.AntiForgeryToken()
+        <button class="btn btn-primary" type="submit">
+            <i class="bi bi-arrow-repeat me-1"></i>Şartları Yenile
+        </button>
+    </form>
+</div>
+
+@if (TempData["msg"] != null)
+{
+    <div class="alert alert-success"><i class="bi bi-check2-circle me-2"></i>@TempData["msg"]</div>
+}
+
+@if (Model?.Requirements?.Any() == true)
+{
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Şart</th>
+                    <th>Madde</th>
+                    <th>Zorunlu</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Requirements.Count; i++)
+                {
+                    var r = Model.Requirements[i];
+                    <tr>
+                        <td>@(i + 1)</td>
+                        <td>@r.Requirement</td>
+                        <td>@(string.IsNullOrWhiteSpace(r.Article) ? "-" : r.Article)</td>
+                        <td>@(r.MustHave ? "Evet" : "Hayır")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.Notes))
+    {
+        <div class="mt-3">
+            <h6>Notlar</h6>
+            <p class="text-secondary">@Model.Notes</p>
+        </div>
+    }
+}
+else
+{
+    <p class="text-secondary">Henüz üretilmiş şart yok. “Şartları Yenile” butonuna basın.</p>
+}

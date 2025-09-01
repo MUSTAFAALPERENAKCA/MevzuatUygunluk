@@ -1,0 +1,174 @@
+﻿@model MevzuatUygunluk.Models.ChecksVm
+@{
+    ViewData["Title"] = "Belge Denetle";
+    var reqs = ViewBag.Requirements as IEnumerable<string> ?? MevzuatUygunluk.Services.RequirementsCatalog.Default;
+}
+
+<div class="row g-4">
+    <div class="col-12 col-lg-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title mb-3">
+                    <i class="bi bi-cloud-arrow-up me-2"></i>Belge Yükle ve Denetle
+                </h5>
+
+                <form id="analyzeForm" asp-action="AnalyzeChecks" asp-controller="Docs" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <div id="dropzone" class="dropzone text-center mb-3" tabindex="0">
+                        <div class="mb-2">
+                            <i class="bi bi-file-earmark-arrow-up fs-1"></i>
+                        </div>
+                        <div class="fw-medium">Dosyayı buraya sürükleyip bırakın</div>
+                        <div class="text-secondary small">veya</div>
+                        <div class="mt-2">
+                            <label class="btn btn-outline-primary btn-sm">
+                                Dosya Seç
+                                <input id="fileInput" type="file" name="file" hidden required />
+                            </label>
+                        </div>
+                        <div id="fileName" class="small text-secondary mt-2">PDF/Word/Resim desteklenir</div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2">
+                        <button id="submitBtn" class="btn btn-primary" type="submit">
+                            <span class="btn-label-default"><i class="bi bi-search me-1"></i>Denetle</span>
+                            <span class="btn-label-loading d-none"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>İşleniyor…</span>
+                        </button>
+                        <a class="btn btn-outline-secondary" asp-controller="Docs" asp-action="Index">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i>Temizle
+                        </a>
+                    </div>
+                </form>
+
+                <hr class="my-4" />
+                <h6 class="text-secondary mb-2">Denetlenecek Şart Seti</h6>
+                <ul class="list-unstyled small mb-0">
+                    @foreach (var r in reqs)
+                    {
+                        <li class="mb-1"><i class="bi bi-dot me-1"></i>@r</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h5 class="card-title mb-0"><i class="bi bi-clipboard-check me-2"></i>Sonuçlar</h5>
+                    <span class="badge rounded-pill text-bg-secondary badge-fixed">
+                        @(Model?.Checks?.Count ?? 0) Madde
+                    </span>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model?.Error))
+                {
+                    <div class="alert alert-danger d-flex align-items-center" role="alert">
+                        <i class="bi bi-x-octagon-fill me-2"></i>
+                        <div>@Model.Error</div>
+                    </div>
+                }
+                else if (Model?.Checks != null && Model.Checks.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th style="min-width:220px;">Şart</th>
+                                    <th>Durum</th>
+                                    <th>Kanıt</th>
+                                    <th>Sayfa</th>
+                                    <th>Güven</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var c in Model.Checks)
+                                {
+                                    <tr>
+                                        <td>@c.Requirement</td>
+                                        <td>
+                                            @if (c.Present)
+                                            {
+                                                <span class="badge text-bg-success"><i class="bi bi-check2-circle me-1"></i>Var</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge text-bg-danger"><i class="bi bi-x-circle me-1"></i>Yok</span>
+                                            }
+                                        </td>
+                                        <td class="small">
+                                            @if (!string.IsNullOrWhiteSpace(c.Evidence))
+                                            {
+                                                <code class="small">@c.Evidence</code>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-secondary">-</span>
+                                            }
+                                        </td>
+                                        <td>@(c.Pages != null && c.Pages.Any() ? string.Join(", ", c.Pages) : "-")</td>
+                                        <td>
+                                            @if (c.Confidence.HasValue)
+                                            {
+                                                var pct = Math.Clamp((int)Math.Round(c.Confidence.Value * 100), 0, 100);
+                                                <div class="progress" style="height:8px;">
+                                                    <div class="progress-bar" role="progressbar" style="width:@pct%"></div>
+                                                </div>
+                                                <div class="small text-secondary mt-1">@pct%</div>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-secondary">-</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-secondary small">Henüz sonuç yok. Bir dosya yükleyip “Denetle”ye basın.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const drop = document.getElementById('dropzone');
+        const input = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const form = document.getElementById('analyzeForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const lblDefault = submitBtn.querySelector('.btn-label-default');
+        const lblLoading = submitBtn.querySelector('.btn-label-loading');
+
+        function setLoading(on) {
+            lblDefault.classList.toggle('d-none', on);
+            lblLoading.classList.toggle('d-none', !on);
+            submitBtn.disabled = on;
+        }
+        function updateName(files) {
+            if (files && files.length) {
+                fileName.textContent = files[0].name + ` (${Math.round(files[0].size/1024)} KB)`;
+            }
+        }
+        drop.addEventListener('click', () => input.click());
+        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+        drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+        drop.addEventListener('drop', e => {
+            e.preventDefault(); drop.classList.remove('dragover');
+            if (e.dataTransfer.files?.length) { input.files = e.dataTransfer.files; updateName(input.files); }
+        });
+        input.addEventListener('change', () => updateName(input.files));
+        form.addEventListener('submit', (e) => {
+            if (!input.files?.length) { e.preventDefault(); showToast('Lütfen bir dosya seçin.'); return; }
+            setLoading(true);
+        });
+    </script>
+}

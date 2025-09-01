@@ -1,0 +1,36 @@
+/* Kurumsal görünüm: daha okunaklý boþluklar ve kart kenarlarý */
+:root {
+    --drop-border: 2px dashed #7aa5ff;
+    --drop-bg: color-mix(in srgb, #7aa5ff 10%, transparent);
+}
+
+.card {
+    border-radius: 14px;
+}
+
+.dropzone {
+    border: var(--drop-border);
+    background: var(--drop-bg);
+    border-radius: 14px;
+    padding: 28px;
+    transition: all .15s ease-in-out;
+    cursor: pointer;
+}
+
+    .dropzone.dragover {
+        background: color-mix(in srgb, #7aa5ff 18%, transparent);
+        transform: scale(1.01);
+    }
+
+.badge-fixed {
+    font-weight: 600;
+    letter-spacing: .2px;
+}
+
+.table thead th {
+    font-weight: 600;
+}
+
+code.small {
+    font-size: .85rem;
+}
