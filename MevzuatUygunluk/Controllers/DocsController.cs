@@ -13,19 +13,27 @@ namespace MevzuatUygunluk.Controllers
         private readonly IHttpClientFactory _httpFactory;
         private readonly IConfiguration _config;
         private readonly IRequirementsStore _reqStore;
+        private readonly IGeminiService _gemini;
+        private readonly IWebHostEnvironment _env;
 
-        public DocsController(IHttpClientFactory httpFactory, IConfiguration config, IRequirementsStore reqStore)
+        public DocsController(
+            IHttpClientFactory httpFactory,
+            IConfiguration config,
+            IRequirementsStore reqStore,
+            IGeminiService gemini,
+            IWebHostEnvironment env)
         {
             _httpFactory = httpFactory;
             _config = config;
             _reqStore = reqStore;
+            _gemini = gemini;
+            _env = env;
         }
 
         [HttpGet]
         public async Task<IActionResult> Index()
         {
-            var gen = await _reqStore.LoadAsync();
-            var reqs = gen?.Requirements?.Select(x => x.Requirement).ToList() ?? RequirementsCatalog.Default.ToList();
+            var reqs = await EnsureRequirementsAsync();
             ViewBag.Requirements = reqs;
             return View(new ChecksVm());
         }
@@ -46,7 +54,7 @@ namespace MevzuatUygunluk.Controllers
             {
                 var apiKey = _config["Gemini:ApiKey"];
                 if (string.IsNullOrWhiteSpace(apiKey))
-                    throw new InvalidOperationException("Gemini ApiKey eksik. (User Secrets veya ortam deðiþkenine ekleyin: Gemini:ApiKey)");
+                    throw new InvalidOperationException("Gemini ApiKey eksik. (User Secrets: Gemini:ApiKey)");
 
                 var model = _config["Gemini:Model"] ?? "gemini-2.0-flash";
 
@@ -97,9 +105,8 @@ namespace MevzuatUygunluk.Controllers
                 if (string.IsNullOrWhiteSpace(fileUri))
                     throw new InvalidOperationException("file.uri alýnamadý.");
 
-                // 3) ÞART LÝSTESÝ
-                var gen = await _reqStore.LoadAsync();
-                var reqs = gen?.Requirements?.Select(x => x.Requirement).ToList() ?? RequirementsCatalog.Default.ToList();
+                // 3) ÞART LÝSTESÝ — DAÝMA MEVZUATTAN ÜRET (gerekirse þimdi üret)
+                var reqs = await EnsureRequirementsAsync();
 
                 // 4) PROMPT
                 var prompt =
@@ -206,10 +213,38 @@ Kanýt bulunamazsa present=false ve evidence='-'.
 
         private async Task<IActionResult> ReturnIndexWithReqs(ChecksVm vm)
         {
-            var gen = await _reqStore.LoadAsync();
-            var reqs = gen?.Requirements?.Select(x => x.Requirement).ToList() ?? RequirementsCatalog.Default.ToList();
+            var reqs = await EnsureRequirementsAsync();
             ViewBag.Requirements = reqs;
             return View("Index", vm);
+        }
+
+        /// <summary>
+        /// Þartlarý store'dan yükler; yoksa 'Regulations:Sources' içindeki mevzuat dosyalarýndan üretip kaydeder.
+        /// Her zaman güncel þart listesini string olarak döner.
+        /// </summary>
+        private async Task<List<string>> EnsureRequirementsAsync(CancellationToken ct = default)
+        {
+            var gen = await _reqStore.LoadAsync(ct);
+            if (gen != null && gen.Requirements?.Any() == true)
+                return gen.Requirements.Select(x => x.Requirement).ToList();
+
+            var rels = _config.GetSection("Regulations:Sources").Get<string[]>() ?? Array.Empty<string>();
+            if (rels.Length == 0)
+                return RequirementsCatalog.Default.ToList(); // kaynak yoksa son çare
+
+            var uploaded = new List<(string fileUri, string mimeType)>();
+            foreach (var rel in rels)
+            {
+                var local = Path.Combine(_env.ContentRootPath, rel.Replace('/', Path.DirectorySeparatorChar));
+                var up = await _gemini.UploadLocalFileAsync(local, ct);
+                uploaded.Add(up);
+            }
+
+            var count = int.TryParse(_config["Regulations:RequirementCount"], out var c) ? c : 30;
+            var generated = await _gemini.GenerateRequirementsFromSourcesAsync(uploaded, count, ct);
+            await _reqStore.SaveAsync(generated, ct);
+
+            return generated.Requirements.Select(x => x.Requirement).ToList();
         }
     }
 }

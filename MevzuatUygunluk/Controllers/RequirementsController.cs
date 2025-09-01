@@ -32,12 +32,22 @@ public class RequirementsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Regenerate()
     {
-        var rel = _cfg["Regulations:LocalPath"] ?? "Data/mevzuat.pdf";
-        var local = Path.Combine(_env.ContentRootPath, rel.Replace('/', Path.DirectorySeparatorChar));
-        var count = int.TryParse(_cfg["Regulations:RequirementCount"], out var c) ? c : 20;
+        var rels = _cfg.GetSection("Regulations:Sources").Get<string[]>() ?? Array.Empty<string>();
+        if (rels.Length == 0)
+        {
+            TempData["msg"] = "Regulations:Sources boş.";
+            return RedirectToAction(nameof(Index));
+        }
 
-        var (fileUri, mime) = await _gemini.UploadLocalFileAsync(local);
-        var generated = await _gemini.GenerateRequirementsFromRegulationAsync(fileUri, mime, count);
+        var uploaded = new List<(string fileUri, string mimeType)>();
+        foreach (var rel in rels)
+        {
+            var local = Path.Combine(_env.ContentRootPath, rel.Replace('/', Path.DirectorySeparatorChar));
+            uploaded.Add(await _gemini.UploadLocalFileAsync(local));
+        }
+
+        var count = int.TryParse(_cfg["Regulations:RequirementCount"], out var c) ? c : 30;
+        var generated = await _gemini.GenerateRequirementsFromSourcesAsync(uploaded, count);
 
         await _store.SaveAsync(generated);
 

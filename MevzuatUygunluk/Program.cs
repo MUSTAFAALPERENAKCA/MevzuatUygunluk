@@ -1,4 +1,4 @@
-﻿using MevzuatUygunluk.Services; // <-- gerekli
+﻿using MevzuatUygunluk.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,9 +6,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 
-// DI kayıtları (HATAYI ÇÖZER)
+// DI kayıtları
 builder.Services.AddSingleton<IRequirementsStore, RequirementsStore>();
-builder.Services.AddScoped<IGeminiService, GeminiService>();
+builder.Services.AddSingleton<IGeminiService, GeminiService>(); // <-- scoped yerine singleton
+builder.Services.AddHostedService<StartupRequirementsHostedService>(); // başlangıçta şart üret
 
 var app = builder.Build();
 
