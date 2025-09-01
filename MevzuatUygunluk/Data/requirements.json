@@ -1,4 +1,572 @@
 {
-  "Requirements": [],
+  "Requirements": [
+    {
+      "Requirement": "ID is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.ID",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "Postbox is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.Postbox",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "Room is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.Room",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "StreetName is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.StreetName",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "BlockName is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.BlockName",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "BuildingName is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.BuildingName",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "BuildingNumber is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": -1,
+      "Field": "Address.BuildingNumber",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "CitySubdivisionName is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "Address.CitySubdivisionName",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "CityName is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "Address.CityName",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "PostalZone is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.PostalZone",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "Region is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.Region",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "District is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Address.District",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "Country is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "Address.Country",
+      "Section": "Address"
+    },
+    {
+      "Requirement": "AircraftID is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "AirTransport.AircraftID",
+      "Section": "AirTransport"
+    },
+    {
+      "Requirement": "ChargeIndicator is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "AllowanceCharge.ChargeIndicator",
+      "Section": "AllowanceCharge"
+    },
+    {
+      "Requirement": "AllowanceChargeReason is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "AllowanceCharge.AllowanceChargeReason",
+      "Section": "AllowanceCharge"
+    },
+    {
+      "Requirement": "MultiplierFactorNumeric is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "AllowanceCharge.MultiplierFactorNumeric",
+      "Section": "AllowanceCharge"
+    },
+    {
+      "Requirement": "SequenceNumeric is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "AllowanceCharge.SequenceNumeric",
+      "Section": "AllowanceCharge"
+    },
+    {
+      "Requirement": "Amount is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "AllowanceCharge.Amount",
+      "Section": "AllowanceCharge"
+    },
+    {
+      "Requirement": "BaseAmount is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "AllowanceCharge.BaseAmount",
+      "Section": "AllowanceCharge"
+    },
+    {
+      "Requirement": "PerUnitAmount is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "AllowanceCharge.PerUnitAmount",
+      "Section": "AllowanceCharge"
+    },
+    {
+      "Requirement": "ExternalReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Attachment.ExternalReference",
+      "Section": "Attachment"
+    },
+    {
+      "Requirement": "EmbeddedDocumentBinaryObject is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Attachment.EmbeddedDocumentBinaryObject",
+      "Section": "Attachment"
+    },
+    {
+      "Requirement": "InvoiceDocumentReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReference.InvoiceDocumentReference",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "SelfBilledInvoiceDocumentReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReference.SelfBilledInvoiceDocumentReference",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "CreditNoteDocumentReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReference.CreditNoteDocumentReference",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "SelfBilledCreditNoteDocumentReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReference.SelfBilledCreditNoteDocumentReference",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "DebitNoteDocumentReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReference.DebitNoteDocumentReference",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "ReminderDocumentReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReference.ReminderDocumentReference",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "AdditionalDocumentReference is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReference.AdditionalDocumentReference",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "BillingReferenceLine is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": -1,
+      "Field": "BillingReference.BillingReferenceLine",
+      "Section": "BillingReference"
+    },
+    {
+      "Requirement": "ID is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "BillingReferenceLine.ID",
+      "Section": "BillingReferenceLine"
+    },
+    {
+      "Requirement": "Amount is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "BillingReferenceLine.Amount",
+      "Section": "BillingReferenceLine"
+    },
+    {
+      "Requirement": "AllowanceCharge is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": -1,
+      "Field": "BillingReferenceLine.AllowanceCharge",
+      "Section": "BillingReferenceLine"
+    },
+    {
+      "Requirement": "Name is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Branch.Name",
+      "Section": "Branch"
+    },
+    {
+      "Requirement": "FinancialInstitution is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Branch.FinancialInstitution",
+      "Section": "Branch"
+    },
+    {
+      "Requirement": "ItemClassificationCode is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "CommodityClassification.ItemClassificationCode",
+      "Section": "CommodityClassification"
+    },
+    {
+      "Requirement": "ChannelCode is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "Communication.ChannelCode",
+      "Section": "Communication"
+    },
+    {
+      "Requirement": "Channel is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Communication.Channel",
+      "Section": "Communication"
+    },
+    {
+      "Requirement": "Value is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "Communication.Value",
+      "Section": "Communication"
+    },
+    {
+      "Requirement": "ID is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Contact.ID",
+      "Section": "Contact"
+    },
+    {
+      "Requirement": "Name is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Contact.Name",
+      "Section": "Contact"
+    },
+    {
+      "Requirement": "Telephone is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Contact.Telephone",
+      "Section": "Contact"
+    },
+    {
+      "Requirement": "Telefax is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Contact.Telefax",
+      "Section": "Contact"
+    },
+    {
+      "Requirement": "ElectronicMail is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Contact.ElectronicMail",
+      "Section": "Contact"
+    },
+    {
+      "Requirement": "Note is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Contact.Note",
+      "Section": "Contact"
+    },
+    {
+      "Requirement": "OtherCommunication is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": -1,
+      "Field": "Contact.OtherCommunication",
+      "Section": "Contact"
+    },
+    {
+      "Requirement": "ID is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "CorporateRegistrationScheme.ID",
+      "Section": "CorporateRegistrationScheme"
+    },
+    {
+      "Requirement": "Name is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "CorporateRegistrationScheme.Name",
+      "Section": "CorporateRegistrationScheme"
+    },
+    {
+      "Requirement": "CorporateRegistrationTypeCode is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "CorporateRegistrationScheme.CorporateRegistrationTypeCode",
+      "Section": "CorporateRegistrationScheme"
+    },
+    {
+      "Requirement": "JuridictionRegionAddress is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": -1,
+      "Field": "CorporateRegistrationScheme.JuridictionRegionAddress",
+      "Section": "CorporateRegistrationScheme"
+    },
+    {
+      "Requirement": "IdentificationCode is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Country.IdentificationCode",
+      "Section": "Country"
+    },
+    {
+      "Requirement": "Name is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "Country.Name",
+      "Section": "Country"
+    },
+    {
+      "Requirement": "Party is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "CustomerParty.Party",
+      "Section": "CustomerParty"
+    },
+    {
+      "Requirement": "DeliveryContact is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "CustomerParty.DeliveryContact",
+      "Section": "CustomerParty"
+    },
+    {
+      "Requirement": "ID is mandatory.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": 1,
+      "MaxOccurs": 1,
+      "Field": "CustomsDeclaration.ID",
+      "Section": "CustomsDeclaration"
+    },
+    {
+      "Requirement": "IssuerParty is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "CustomsDeclaration.IssuerParty",
+      "Section": "CustomsDeclaration"
+    },
+    {
+      "Requirement": "ID is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Delivery.ID",
+      "Section": "Delivery"
+    },
+    {
+      "Requirement": "Quantity is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Delivery.Quantity",
+      "Section": "Delivery"
+    },
+    {
+      "Requirement": "ActualDeliveryDate is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Delivery.ActualDeliveryDate",
+      "Section": "Delivery"
+    },
+    {
+      "Requirement": "ActualDeliveryTime is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Delivery.ActualDeliveryTime",
+      "Section": "Delivery"
+    },
+    {
+      "Requirement": "LatestDeliveryDate is optional.",
+      "Article": null,
+      "MustHave": false,
+      "MinOccurs": 0,
+      "MaxOccurs": 1,
+      "Field": "Delivery.LatestDeliveryDate",
+      "Section": "Delivery"
+    },
+    {
+      "Requirement": "LatestDeliveryTime is optional.",
+      "Article": null,
+      "MustHave": true,
+      "MinOccurs": null,
+      "MaxOccurs": null,
+      "Field": "Delivery.LatestDelivery",
+      "Section": null
+    }
+  ],
   "Notes": null
 }

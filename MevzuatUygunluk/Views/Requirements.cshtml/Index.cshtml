@@ -3,7 +3,7 @@
     ViewData["Title"] = "Mevzuat Şartları";
 }
 <div class="d-flex align-items-center justify-content-between mb-3">
-    <h3 class="mb-0">Mevzuat Şartları (@(ViewBag.Count ?? 0))</h3>
+    <h3 class="mb-0">Mevzuat Şartları (@(Model?.Requirements?.Count ?? 0))</h3>
     <form asp-action="Regenerate" asp-controller="Requirements" method="post">
         @Html.AntiForgeryToken()
         <button class="btn btn-primary" type="submit">
@@ -12,11 +12,6 @@
     </form>
 </div>
 
-@if (TempData["msg"] != null)
-{
-    <div class="alert alert-success"><i class="bi bi-check2-circle me-2"></i>@TempData["msg"]</div>
-}
-
 @if (Model?.Requirements?.Any() == true)
 {
     <div class="table-responsive">
@@ -24,9 +19,12 @@
             <thead>
                 <tr>
                     <th>#</th>
+                    <th>Field</th>
+                    <th>Section</th>
                     <th>Şart</th>
                     <th>Madde</th>
                     <th>Zorunlu</th>
+                    <th>Min..Max</th>
                 </tr>
             </thead>
             <tbody>
@@ -35,24 +33,19 @@
                     var r = Model.Requirements[i];
                     <tr>
                         <td>@(i + 1)</td>
+                        <td>@(string.IsNullOrWhiteSpace(r.Field) ? "-" : r.Field)</td>
+                        <td>@(string.IsNullOrWhiteSpace(r.Section) ? "-" : r.Section)</td>
                         <td>@r.Requirement</td>
                         <td>@(string.IsNullOrWhiteSpace(r.Article) ? "-" : r.Article)</td>
                         <td>@(r.MustHave ? "Evet" : "Hayır")</td>
+                        <td>@($"{(r.MinOccurs ?? 0)}..{(r.MaxOccurs == -1 ? "n" : r.MaxOccurs?.ToString() ?? "?")}")</td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-
-    @if (!string.IsNullOrWhiteSpace(Model.Notes))
-    {
-        <div class="mt-3">
-            <h6>Notlar</h6>
-            <p class="text-secondary">@Model.Notes</p>
-        </div>
-    }
 }
 else
 {
-    <p class="text-secondary">Henüz üretilmiş şart yok. “Şartları Yenile” butonuna basın.</p>
+    <p class="text-secondary">Şart listesi yok. “Şartları Yenile”ye basın.</p>
 }

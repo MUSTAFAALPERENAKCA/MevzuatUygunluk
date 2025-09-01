@@ -1,174 +1,182 @@
 ﻿@model MevzuatUygunluk.Models.ChecksVm
 @{
-    ViewData["Title"] = "Belge Denetle";
-    var reqs = ViewBag.Requirements as IEnumerable<string> ?? MevzuatUygunluk.Services.RequirementsCatalog.Default;
+    ViewData["Title"] = "Belge Denetleme";
 }
 
-<div class="row g-4">
-    <div class="col-12 col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h5 class="card-title mb-3">
-                    <i class="bi bi-cloud-arrow-up me-2"></i>Belge Yükle ve Denetle
-                </h5>
+<div class="container py-3">
+    <h3 class="mb-3">Belge Denetleme</h3>
+    <div class="row g-3">
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header">Belge Yükle ve Denetle</div>
+                <div class="card-body">
+                    <form asp-action="AnalyzeChecks" asp-controller="Docs" method="post" enctype="multipart/form-data" id="analyzeForm">
+                        @Html.AntiForgeryToken()
 
-                <form id="analyzeForm" asp-action="AnalyzeChecks" asp-controller="Docs" method="post" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
-
-                    <div id="dropzone" class="dropzone text-center mb-3" tabindex="0">
-                        <div class="mb-2">
-                            <i class="bi bi-file-earmark-arrow-up fs-1"></i>
+                        <div class="mb-3">
+                            <label class="form-label">Senaryo</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                @foreach (var opt in Model.ScenarioOptions)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="Scenario" value="@opt.Value" @(opt.Value == Model.Scenario.ToString() ? "checked" : null) />
+                                        <label class="form-check-label">@opt.Text</label>
+                                    </div>
+                                }
+                            </div>
                         </div>
-                        <div class="fw-medium">Dosyayı buraya sürükleyip bırakın</div>
-                        <div class="text-secondary small">veya</div>
-                        <div class="mt-2">
-                            <label class="btn btn-outline-primary btn-sm">
-                                Dosya Seç
-                                <input id="fileInput" type="file" name="file" hidden required />
-                            </label>
+
+                        <div class="mb-3">
+                            <label class="form-label">Fatura Tipi</label>
+                            <select asp-for="InvoiceType" class="form-select" asp-items="Model.TypeOptions"></select>
                         </div>
-                        <div id="fileName" class="small text-secondary mt-2">PDF/Word/Resim desteklenir</div>
-                    </div>
 
-                    <div class="d-flex align-items-center gap-2">
-                        <button id="submitBtn" class="btn btn-primary" type="submit">
-                            <span class="btn-label-default"><i class="bi bi-search me-1"></i>Denetle</span>
-                            <span class="btn-label-loading d-none"><span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>İşleniyor…</span>
-                        </button>
-                        <a class="btn btn-outline-secondary" asp-controller="Docs" asp-action="Index">
-                            <i class="bi bi-arrow-counterclockwise me-1"></i>Temizle
-                        </a>
-                    </div>
-                </form>
+                        <div class="mb-3">
+                            <label class="form-label">Dosyalar (çoklu / .zip destekli)</label>
+                            <input type="file" name="Files" multiple class="form-control" />
+                            <div class="form-text">PDF/Word/Resim yanında .zip yükleyebilirsiniz.</div>
+                        </div>
 
-                <hr class="my-4" />
-                <h6 class="text-secondary mb-2">Denetlenecek Şart Seti</h6>
-                <ul class="list-unstyled small mb-0">
-                    @foreach (var r in reqs)
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">Denetle</button>
+                            <a class="btn btn-outline-secondary" asp-action="ExportExcel">Excel</a>
+                            <a class="btn btn-outline-secondary" asp-action="ExportPdf">PDF</a>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.Error))
+                        {
+                            <div class="alert alert-danger mt-3">@Model.Error</div>
+                        }
+
+                        <hr class="my-4" />
+                        <h6>Filtreler</h6>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <select id="filterMust" class="form-select">
+                                    <option value="">Zorunlu/Seçimli (hepsi)</option>
+                                    <option value="true">Sadece Zorunlu</option>
+                                    <option value="false">Sadece Seçimli</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <select id="filterPresent" class="form-select">
+                                    <option value="">Durum (hepsi)</option>
+                                    <option value="true">Bulunan</option>
+                                    <option value="false">Bulunmayan</option>
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between">
+                    <span>Sonuçlar</span>
+                    <span class="badge bg-secondary">@Model.Checks.Count Madde</span>
+                </div>
+                <div class="card-body">
+                    @if (Model.Checks.Count == 0)
                     {
-                        <li class="mb-1"><i class="bi bi-dot me-1"></i>@r</li>
+                        <div class="text-muted">Henüz sonuç yok.</div>
                     }
-                </ul>
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table align-middle" id="resultsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Şart</th>
+                                        <th class="text-center">Zorunlu</th>
+                                        <th class="text-center">Durum</th>
+                                        <th>Kanıt</th>
+                                        <th>Sayfa</th>
+                                        <th class="text-center">Güven</th>
+                                        <th class="text-center">Ayrıntı</th>
+                                        <th class="text-center">Düzelt</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var c in Model.Checks)
+                                    {
+                                        var rowClass = c.MustHave && !c.Present ? "row-missing" : "";
+                                        <tr class="@rowClass" data-must="@c.MustHave.ToString().ToLower()" data-present="@c.Present.ToString().ToLower()">
+                                            <td>@c.Requirement</td>
+                                            <td class="text-center">@((c.MustHave) ? "Evet" : "Hayır")</td>
+                                            <td class="text-center">@((c.Present) ? "Var" : "Yok")</td>
+                                            <td>@(string.IsNullOrWhiteSpace(c.Evidence) ? "-" : c.Evidence)</td>
+                                            <td>@(c.Pages == null ? "-" : string.Join(",", c.Pages))</td>
+                                            <td class="text-center">@c.Confidence?.ToString("0.00")</td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-secondary btn-detail"
+                                                        data-req="@c.Requirement"
+                                                        data-law='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(c.LawRefs ?? new List<MevzuatUygunluk.Models.LawRef>()))'
+                                                        data-files='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(c.EvidenceByFile ?? new List<MevzuatUygunluk.Models.FileEvidence>()))'>
+                                                    Dayanak
+                                                </button>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-feedback"
+                                                        data-req="@c.Requirement">
+                                                    Düzelt
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
+</div>
 
-    <div class="col-12 col-lg-7">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="card-title mb-0"><i class="bi bi-clipboard-check me-2"></i>Sonuçlar</h5>
-                    <span class="badge rounded-pill text-bg-secondary badge-fixed">
-                        @(Model?.Checks?.Count ?? 0) Madde
-                    </span>
+<!-- Dayanak Modal -->
+<div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Dayanak & Kanıt Ayrıntıları</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="detailBody"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Düzelt Modal -->
+<div class="modal fade" id="modalFeedback" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Bulguyu Düzelt</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="fbReq" />
+                <div class="mb-2">
+                    <label class="form-label">Durum</label>
+                    <select id="fbPresent" class="form-select">
+                        <option value="">Seçiniz</option>
+                        <option value="true">Var</option>
+                        <option value="false">Yok</option>
+                    </select>
                 </div>
-
-                @if (!string.IsNullOrEmpty(Model?.Error))
-                {
-                    <div class="alert alert-danger d-flex align-items-center" role="alert">
-                        <i class="bi bi-x-octagon-fill me-2"></i>
-                        <div>@Model.Error</div>
-                    </div>
-                }
-                else if (Model?.Checks != null && Model.Checks.Any())
-                {
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead>
-                                <tr>
-                                    <th style="min-width:220px;">Şart</th>
-                                    <th>Durum</th>
-                                    <th>Kanıt</th>
-                                    <th>Sayfa</th>
-                                    <th>Güven</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var c in Model.Checks)
-                                {
-                                    <tr>
-                                        <td>@c.Requirement</td>
-                                        <td>
-                                            @if (c.Present)
-                                            {
-                                                <span class="badge text-bg-success"><i class="bi bi-check2-circle me-1"></i>Var</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge text-bg-danger"><i class="bi bi-x-circle me-1"></i>Yok</span>
-                                            }
-                                        </td>
-                                        <td class="small">
-                                            @if (!string.IsNullOrWhiteSpace(c.Evidence))
-                                            {
-                                                <code class="small">@c.Evidence</code>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-secondary">-</span>
-                                            }
-                                        </td>
-                                        <td>@(c.Pages != null && c.Pages.Any() ? string.Join(", ", c.Pages) : "-")</td>
-                                        <td>
-                                            @if (c.Confidence.HasValue)
-                                            {
-                                                var pct = Math.Clamp((int)Math.Round(c.Confidence.Value * 100), 0, 100);
-                                                <div class="progress" style="height:8px;">
-                                                    <div class="progress-bar" role="progressbar" style="width:@pct%"></div>
-                                                </div>
-                                                <div class="small text-secondary mt-1">@pct%</div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-secondary">-</span>
-                                            }
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-                else
-                {
-                    <div class="text-secondary small">Henüz sonuç yok. Bir dosya yükleyip “Denetle”ye basın.</div>
-                }
+                <div class="mb-2">
+                    <label class="form-label">Kanıt (isteğe bağlı)</label>
+                    <textarea id="fbEvidence" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnSendFb">Kaydet</button>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        const drop = document.getElementById('dropzone');
-        const input = document.getElementById('fileInput');
-        const fileName = document.getElementById('fileName');
-        const form = document.getElementById('analyzeForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const lblDefault = submitBtn.querySelector('.btn-label-default');
-        const lblLoading = submitBtn.querySelector('.btn-label-loading');
-
-        function setLoading(on) {
-            lblDefault.classList.toggle('d-none', on);
-            lblLoading.classList.toggle('d-none', !on);
-            submitBtn.disabled = on;
-        }
-        function updateName(files) {
-            if (files && files.length) {
-                fileName.textContent = files[0].name + ` (${Math.round(files[0].size/1024)} KB)`;
-            }
-        }
-        drop.addEventListener('click', () => input.click());
-        drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
-        drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
-        drop.addEventListener('drop', e => {
-            e.preventDefault(); drop.classList.remove('dragover');
-            if (e.dataTransfer.files?.length) { input.files = e.dataTransfer.files; updateName(input.files); }
-        });
-        input.addEventListener('change', () => updateName(input.files));
-        form.addEventListener('submit', (e) => {
-            if (!input.files?.length) { e.preventDefault(); showToast('Lütfen bir dosya seçin.'); return; }
-            setLoading(true);
-        });
-    </script>
+    <script src="~/js/checks.js"></script>
 }

@@ -34,3 +34,13 @@
 code.small {
     font-size: .85rem;
 }
+
+/* Zorunlu olup bulunmayan satýrlar için açýk kýrmýzý arka plan */
+.table tbody tr.row-missing > td,
+.table tbody tr.row-missing > th {
+    background-color: #f8d7da !important; /* Bootstrap'in danger arka planý */
+}
+.table tbody tr.row-missing > td,
+.table tbody tr.row-missing > th {
+    background-color: #f8d7da !important;
+}

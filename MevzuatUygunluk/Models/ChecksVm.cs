@@ -1,22 +1,20 @@
-﻿namespace MevzuatUygunluk.Models;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
+
+namespace MevzuatUygunluk.Models;
 
 public class ChecksVm
 {
-    public List<CheckResult>? Checks { get; set; }
+    // ... mevcut alanlar ...
+    public IFormFile? File { get; set; }                   // geri uyumluluk
+    public List<IFormFile> Files { get; set; } = new();    // çoklu yükleme
+
+    public InvoiceScenario Scenario { get; set; } = InvoiceScenario.Ticari;
+    public InvoiceType InvoiceType { get; set; } = InvoiceType.Satis;
+
+    public List<SelectListItem> ScenarioOptions { get; set; } = new();
+    public List<SelectListItem> TypeOptions { get; set; } = new();
+
+    public List<CheckResult> Checks { get; set; } = new();
     public string? Error { get; set; }
-}
-
-public class CheckResult
-{
-    public string Requirement { get; set; } = "";
-    public bool Present { get; set; }
-    public string? Evidence { get; set; }
-    public double? Confidence { get; set; }
-    public List<int>? Pages { get; set; }
-}
-
-public class GeminiChecksResponse
-{
-    public List<CheckResult>? Checks { get; set; }
-    public string? Overall_Summary { get; set; }
 }
